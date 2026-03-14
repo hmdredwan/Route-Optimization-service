@@ -18,9 +18,9 @@ FROM node:20-slim
 WORKDIR /app
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-        libssl1.1 \
         python3 \
         python3-pip \
+        build-essential \
         curl \
     && pip3 install --no-cache-dir --break-system-packages ortools \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
