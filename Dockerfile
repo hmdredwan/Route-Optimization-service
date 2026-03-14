@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dev dependencies (needed for prisma + tsc)
-RUN npm ci
+RUN npm ci && chmod +x ./node_modules/.bin/*
 
 # Copy source code
 COPY . .
