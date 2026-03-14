@@ -4,11 +4,16 @@ FROM node:20 AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+
+# Install all deps and fix permissions
+RUN npm ci && chmod +x node_modules/.bin/prisma node_modules/.bin/tsc
 
 COPY . .
-# RUN npm run build
+
+# Generate Prisma client
 RUN npx prisma generate
+
+# Build TypeScript
 RUN npm run build
 
 # -------- Runtime stage --------
