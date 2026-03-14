@@ -3,17 +3,16 @@ FROM node:20 AS builder
 
 WORKDIR /app
 
+# Copy package.json first (better caching)
 COPY package*.json ./
 
-# Install all deps and fix permissions
-RUN npm ci && chmod +x node_modules/.bin/prisma node_modules/.bin/tsc
+# Install dev dependencies (needed for prisma + tsc)
+RUN npm ci
 
+# Copy source code
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
-
-# Build TypeScript
+# Build TypeScript + generate Prisma client
 RUN npm run build
 
 # -------- Runtime stage --------
