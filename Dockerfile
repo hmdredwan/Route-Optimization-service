@@ -3,17 +3,12 @@ FROM node:20 AS builder
 
 WORKDIR /app
 
-# Copy package.json first (better caching)
 COPY package*.json ./
+RUN npm ci
 
-# Install dev dependencies (needed for prisma + tsc)
-RUN npm ci && chmod +x ./node_modules/.bin/*
-
-# Copy source code
 COPY . .
-
-# Build TypeScript + generate Prisma client
 RUN npm run build
+
 
 # -------- Runtime stage --------
 FROM node:20-slim
