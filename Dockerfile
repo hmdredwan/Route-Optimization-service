@@ -7,7 +7,9 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build
+
+RUN npm run build && \
+    npx prisma generate --schema=prisma/schema.prisma
 
 
 # -------- Runtime stage --------
@@ -15,25 +17,23 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install dependencies: libssl1.1 + Python + pip
-RUN echo "deb http://deb.debian.org/debian bullseye main" > /etc/apt/sources.list.d/bullseye.list \
-    && echo "deb http://security.debian.org/debian-security bullseye-security main" >> /etc/apt/sources.list.d/bullseye.list \
-    && apt-get update -y \
-    && apt-get install -y \
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
         libssl1.1 \
         python3 \
         python3-pip \
-    && pip3 install --break-system-packages ortools \
-    && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/bullseye.list
+        curl \
+    && pip3 install --no-cache-dir --break-system-packages ortools \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy app files
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/prisma/schema.prisma ./prisma/schema.prisma
-
-# Copy Python solver (IMPORTANT)
+COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/src/solver ./src/solver
 
-# Generate Prisma client and start server
-CMD ["sh", "-c", "npx prisma generate && node dist/index.js"]
+ENV PRISMA_SCHEMA=/app/prisma/schema.prisma
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-3000}/health || exit 1
+
+CMD ["node", "dist/index.js"]
